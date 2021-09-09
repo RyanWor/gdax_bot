@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import argparse
-import boto3
 import configparser
 import datetime
 import decimal
@@ -11,6 +10,9 @@ import sys
 import time
 
 import cbpro
+
+import http.client
+import urllib
 
 from decimal import Decimal
 
@@ -124,6 +126,8 @@ if __name__ == "__main__":
     aws_secret_access_key = config.get(config_section, 'AWS_SECRET_ACCESS_KEY')
     sns_topic = config.get(config_section, 'SNS_TOPIC')
     aws_region = config.get(config_section, 'AWS_REGION')
+    pushover_app_token = config.get(config_section, 'PUSHOVER_APP_TOKEN')
+    pushover_user_key = config.get(config_section, 'PUSHOVER_USER_KEY')
 
     # Instantiate public and auth API clients
     if not args.sandbox_mode:
@@ -162,12 +166,7 @@ if __name__ == "__main__":
     print(f"quote_increment: {quote_increment}")
 
     # Prep boto SNS client for email notifications
-    sns = boto3.client(
-        "sns",
-        aws_access_key_id=aws_access_key_id,
-        aws_secret_access_key=aws_secret_access_key,
-        region_name=aws_region
-    )
+    conn = http.client.HTTPSConnection("api.pushover.net:443")
 
     if amount_currency_is_quote_currency:
         result = auth_client.place_market_order(
@@ -186,11 +185,14 @@ if __name__ == "__main__":
 
     if "message" in result:
         # Something went wrong if there's a 'message' field in response
-        sns.publish(
-            TopicArn=sns_topic,
-            Subject=f"Could not place {market_name} {order_side} order",
-            Message=json.dumps(result, sort_keys=True, indent=4)
-        )
+        conn.request("POST", "/1/messages.json",
+            urllib.parse.urlencode({
+                "token": pushover_app_token,
+                "user": pushover_user_key,
+                "title": f"Could not place {market_name} {order_side} order",
+                "message": json.dumps(result, sort_keys=True, indent=4),
+            }), { "Content-type": "application/x-www-form-urlencoded" })
+        conn.getresponse()
         exit()
 
     if result and "status" in result and result["status"] == "rejected":
@@ -208,11 +210,14 @@ if __name__ == "__main__":
     while "status" in order and \
             (order["status"] == "pending" or order["status"] == "open"):
         if total_wait_time > warn_after:
-            sns.publish(
-                TopicArn=sns_topic,
-                Subject=f"{market_name} {order_side} order of {amount} {amount_currency} OPEN/UNFILLED",
-                Message=json.dumps(order, sort_keys=True, indent=4)
-            )
+            conn.request("POST", "/1/messages.json",
+                urllib.parse.urlencode({
+                    "token": pushover_app_token,
+                    "user": pushover_user_key,
+                    "title": f"{market_name} {order_side} order of {amount} {amount_currency} OPEN/UNFILLED",
+                    "message": json.dumps(order, sort_keys=True, indent=4),
+                }), { "Content-type": "application/x-www-form-urlencoded" })
+            conn.getresponse()
             exit()
 
         print(f"{get_timestamp()}: Order {order_id} still {order['status']}. Sleeping for {wait_time} (total {total_wait_time})")
@@ -223,11 +228,14 @@ if __name__ == "__main__":
 
         if "message" in order and order["message"] == "NotFound":
             # Most likely the order was manually cancelled in the UI
-            sns.publish(
-                TopicArn=sns_topic,
-                Subject=f"{market_name} {order_side} order of {amount} {amount_currency} CANCELLED",
-                Message=json.dumps(result, sort_keys=True, indent=4)
-            )
+            conn.request("POST", "/1/messages.json",
+                urllib.parse.urlencode({
+                    "token": pushover_app_token,
+                    "user": pushover_user_key,
+                    "title": f"{market_name} {order_side} order of {amount} {amount_currency} CANCELLED",
+                    "message": json.dumps(result, sort_keys=True, indent=4),
+                }), { "Content-type": "application/x-www-form-urlencoded" })
+            conn.getresponse()
             exit()
 
     # Order status is no longer pending!
@@ -237,9 +245,12 @@ if __name__ == "__main__":
 
     subject = f"{market_name} {order_side} order of {amount} {amount_currency} {order['status']} @ {market_price} {quote_currency}"
     print(subject)
-    sns.publish(
-        TopicArn=sns_topic,
-        Subject=subject,
-        Message=json.dumps(order, sort_keys=True, indent=4)
-    )
+    conn.request("POST", "/1/messages.json",
+        urllib.parse.urlencode({
+            "token": pushover_app_token,
+            "user": pushover_user_key,
+            "title": subject,
+            "message": json.dumps(order, sort_keys=True, indent=4),
+        }), { "Content-type": "application/x-www-form-urlencoded" })
+    conn.getresponse()
 
