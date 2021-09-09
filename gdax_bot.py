@@ -122,10 +122,6 @@ if __name__ == "__main__":
     key = config.get(config_section, 'API_KEY')
     passphrase = config.get(config_section, 'PASSPHRASE')
     secret = config.get(config_section, 'SECRET_KEY')
-    aws_access_key_id = config.get(config_section, 'AWS_ACCESS_KEY_ID')
-    aws_secret_access_key = config.get(config_section, 'AWS_SECRET_ACCESS_KEY')
-    sns_topic = config.get(config_section, 'SNS_TOPIC')
-    aws_region = config.get(config_section, 'AWS_REGION')
     pushover_app_token = config.get(config_section, 'PUSHOVER_APP_TOKEN')
     pushover_user_key = config.get(config_section, 'PUSHOVER_USER_KEY')
 
