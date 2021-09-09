@@ -76,8 +76,8 @@ Find and follow existing guides for creating an API key. Only grant the "Trade" 
 While you're in the sandbox UI, fund your fiat account by transferring from the absurd fake balance that sits in the linked Coinbase account (remember, this is all just fake test data; no real money or crypto goes through the sandbox).
 
 
-#### (Optional) Create an AWS Simple Notification System topic
-This is out of scope for this document, but generate a set of AWS access keys and a new SNS topic to enable the bot to send email reports.
+#### (Optional) Send alerts via Pushover
+This is out of scope for this document, but generate a app token and user key to enable the bot to send pushover alerts.
 
 _TODO: Make this optional_
 
@@ -85,7 +85,7 @@ _TODO: Make this optional_
 #### Customize settings
 Update ```settings.conf``` with your API key info in the "sandbox" section. I recommend saving your version as ```settings-local.conf``` as that is already in the ```.gitignore``` so you don't have to worry about committing your sensitive info to your forked repo.
 
-If you have an AWS SNS topic, enter the access keys and SNS topic.
+If you intend to receive alerts via Pushover, enter the app token and user key.
 
 _TODO: Add support to read these values from environment vars_
 
@@ -95,14 +95,14 @@ Run against the Coinbase Pro sandbox by including the ```-sandbox``` flag. Remem
 
 Activate your virtualenv and try a basic buy of $100 USD worth of BTC:
 ```
-python gdax_bot.py BTC-USD BUY 100 USD -sandbox -c ../settings-local.conf
+python3 gdax_bot.py BTC-USD BUY 100 USD -sandbox -c ../settings-local.conf
 ```
 
 Check the sandbox UI and you'll see your limit order listed. Unfortunately your order probably won't fill unless there's other activity in the sandbox.
 
 
 ### Usage
-Run ```python gdax_bot.py -h``` for usage information:
+Run ```python3 gdax_bot.py -h``` for usage information:
 
 ```
 usage: gdax_bot.py [-h] [-sandbox] [-warn_after WARN_AFTER] [-j]
@@ -140,18 +140,18 @@ This is meant to be run as a crontab to make regular purchases on a set schedule
 
 $50 USD of ETH every Monday at 17:23:
 ```
-23 17 * * 1 /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gdax_bot.py -j ETH-USD BUY 50.00 USD -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
+23 17 * * 1 /your/virtualenv/path/bin/python3 -u /your/gdax_bot/path/src/gdax_bot.py -j ETH-USD BUY 50.00 USD -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
 ```
 *The ```-u``` option makes python output ```stdout``` and ```stderr``` unbuffered so that you can watch the progress in real time by running ```tail -f cron.log```.*
 
 €75 EUR of BTC every other day at 14:00:
 ```
-00 14 */2 * * /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gdax_bot.py -j BTC-EUR BUY 75.00 EUR -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
+00 14 */2 * * /your/virtualenv/path/bin/python3 -u /your/gdax_bot/path/src/gdax_bot.py -j BTC-EUR BUY 75.00 EUR -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
 ```
 
 £5 GBP of LTC every day on every third hour at the 38th minute (i.e. 00:38, 03:38, 06:38, 09:38, 12:38, 15:38, 18:38, 21:38):
 ```
-38 */3 * * * /your/virtualenv/path/bin/python -u /your/gdax_bot/path/src/gdax_bot.py -j LTC-GBP BUY 5.00 GBP -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
+38 */3 * * * /your/virtualenv/path/bin/python3 -u /your/gdax_bot/path/src/gdax_bot.py -j LTC-GBP BUY 5.00 GBP -c /your/settings/path/your_settings_file.conf >> /your/cron/log/path/cron.log
 ```
 
 
